@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Password Strength Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet">
+
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --cream: #faf7f2;
+      --warm-white: #fff9f2;
+      --paper: #f2ede4;
+      --border: #e0d8cc;
+      --text: #2d2520;
+      --muted: #8c7b6e;
+      --coral: #e8624a;
+      --amber: #d4922a;
+      --sage: #5a8a5a;
+      --teal: #3d8080;
+      --red: #c94040;
+    }
+
+    body {
+      background: var(--cream);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      padding: 2.5rem 1.2rem 4rem;
+      /* Subtle paper texture with radial dots */
+      background-image: radial-gradient(circle, #d8cfc4 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    /* Center everything */
+    .page {
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .lock-emoji {
+      font-size: 2.8rem;
+      display: block;
+      margin-bottom: .6rem;
+      animation: bob 2.5s ease-in-out infinite;
+    }
+
+    @keyframes bob {
+
+      0%,
+      100% {
+        transform: translateY(0) rotate(-3deg);
+      }
+
+      50% {
+        transform: translateY(-5px) rotate(3deg);
+      }
+    }
+
+    header h1 {
+      font-family: 'Fraunces', serif;
+      font-size: 2.1rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    header p {
+      margin-top: .5rem;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--warm-white);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 1.8rem;
+      margin-bottom: 1.2rem;
+      box-shadow: 0 2px 12px rgba(100, 70, 50, .07);
+    }
+
+    /* ── Input row ── */
+    .input-row {
+      display: flex;
+      gap: .7rem;
+    }
+
+    .input-wrap {
+      position: relative;
+      flex: 1;
+    }
+
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      background: var(--paper);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: .85rem 2.8rem .85rem 1rem;
+      font-family: 'DM Sans', monospace;
+      font-size: .95rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    input:focus {
+      border-color: var(--coral);
+      box-shadow: 0 0 0 3px rgba(232, 98, 74, .12);
+    }
+
+    input::placeholder {
+      color: var(--muted);
+    }
+
+    .show-btn {
+      position: absolute;
+      right: .7rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      color: var(--muted);
+      transition: color .2s;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .show-btn:hover {
+      color: var(--coral);
+    }
+
+    .analyze-btn {
+      background: var(--coral);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0 1.4rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .2s, transform .1s;
+    }
+
+    .analyze-btn:hover {
+      background: #d4543c;
+    }
+
+    .analyze-btn:active {
+      transform: scale(.97);
+    }
+
+    /* ── Meter ── */
+    .meter-area {
+      margin-top: 1.4rem;
+      display: none;
+    }
+
+    .meter-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: .5rem;
+    }
+
+    .strength-label {
+      font-family: 'Fraunces', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      transition: color .3s;
+    }
+
+    .score-text {
+      font-size: .85rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .meter-track {
+      height: 10px;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .meter-bar {
+      height: 100%;
+      width: 0;
+      border-radius: 999px;
+      transition: width .55s cubic-bezier(.34, 1.4, .64, 1), background .3s;
+    }
+
+    /* ── Checks ── */
+    .section-title {
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: .9rem;
+    }
+
+    .checks-list {
+      display: flex;
+      flex-direction: column;
+      gap: .55rem;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .7rem .9rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--paper);
+      transition: border-color .2s;
+    }
+
+    .check-row.pass {
+      border-color: #b8d4b8;
+      background: #f4faf4;
+    }
+
+    .check-row.fail {
+      border-color: #f0c8c0;
+      background: #fdf6f5;
+    }
+
+    .check-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .pass .check-dot {
+      background: var(--sage);
+    }
+
+    .fail .check-dot {
+      background: var(--red);
+    }
+
+    .check-info {
+      flex: 1;
+    }
+
+    .check-name {
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .check-msg {
+      font-size: .77rem;
+      color: var(--muted);
+      margin-top: .1rem;
+    }
+
+    .check-pts {
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pass .check-pts {
+      color: var(--sage);
+    }
+
+    /* ── Suggestions ── */
+    .sugg-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+
+    .sugg-list li {
+      display: flex;
+      gap: .65rem;
+      align-items: flex-start;
+      font-size: .85rem;
+      line-height: 1.5;
+      color: var(--text);
+      padding: .65rem .9rem;
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .sugg-arrow {
+      color: var(--amber);
+      font-weight: 700;
+      flex-shrink: 0;
+      font-size: .9rem;
+    }
+
+    /* ── Results fade in ── */
+    .results {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity .35s, transform .35s;
+      pointer-events: none;
+    }
+
+    .results.show {
+      opacity: 1;
+      transform: none;
+      pointer-events: all;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      margin-top: 2.5rem;
+      font-size: .75rem;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    @media (max-width: 460px) {
+      .input-row {
+        flex-direction: column;
+      }
+
+      .analyze-btn {
+        padding: .85rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="page">
+
+    <header>
+      <span class="lock-emoji">🔐</span>
+      <h1>Password Strength Analyzer</h1>
+    </header>
+
+    <!-- Input card -->
+    <div class="card">
+      <div class="input-row">
+        <div class="input-wrap">
+          <input type="password" id="pwInput" placeholder="Type your password here…" autocomplete="off">
+          <button class="show-btn" id="showBtn" title="Show password">👁</button>
+        </div>
+        <button class="analyze-btn" id="analyzeBtn">Check it</button>
+      </div>
+
+      <!-- Strength meter -->
+      <div class="meter-area" id="meterArea">
+        <div class="meter-top">
+          <span class="strength-label" id="strengthLabel">—</span>
+          <span class="score-text" id="scoreText"></span>
+        </div>
+        <div class="meter-track">
+          <div class="meter-bar" id="meterBar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="results" id="results">
+
+      <div class="card">
+        <div class="section-title">How your password scored</div>
+        <div class="checks-list" id="checksList"></div>
+      </div>
+
+      <div class="card" id="suggCard" style="display:none">
+        <div class="section-title">💡 What to improve</div>
+        <ul class="sugg-list" id="suggList"></ul>
+      </div>
+
+    </div>
+
+  </div>
+
+  <footer>
+    Password Strength Analyzer &nbsp;·&nbsp; Python Project
+  </footer>
+
+  <script>
+    // ── Config ──
+    const CHECK_ORDER = ["Length", "Uppercase", "Lowercase", "Numbers", "Special Chars", "No Weak Patterns"];
+
+    const STRENGTH_COLORS = {
+      "Weak": { bar: "#c94040", label: "#c94040" },
+      "Medium": { bar: "#d4922a", label: "#d4922a" },
+      "Strong": { bar: "#5a8a5a", label: "#5a8a5a" },
+      "Very Strong": { bar: "#3d8080", label: "#3d8080" },
+    };
+
+    // ── DOM refs ──
+    const pwInput = document.getElementById("pwInput");
+    const showBtn = document.getElementById("showBtn");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const meterArea = document.getElementById("meterArea");
+    const meterBar = document.getElementById("meterBar");
+    const strengthLabel = document.getElementById("strengthLabel");
+    const scoreText = document.getElementById("scoreText");
+    const checksList = document.getElementById("checksList");
+    const results = document.getElementById("results");
+    const suggCard = document.getElementById("suggCard");
+    const suggList = document.getElementById("suggList");
+
+    // ── Show / hide password toggle ──
+    showBtn.addEventListener("click", () => {
+      const isHidden = pwInput.type === "password";
+      pwInput.type = isHidden ? "text" : "password";
+      showBtn.textContent = isHidden ? "🔒" : "👁";
+    });
+
+    // ── Trigger analysis ──
+    analyzeBtn.addEventListener("click", runAnalysis);
+    pwInput.addEventListener("keydown", e => e.key === "Enter" && runAnalysis());
+
+    // Live analysis as user types (debounced)
+    let timer;
+    pwInput.addEventListener("input", () => {
+      clearTimeout(timer);
+      if (pwInput.value) timer = setTimeout(runAnalysis, 300);
+    });
+
+    // ── Main analysis function ──
+    async function runAnalysis() {
+      const pw = pwInput.value;
+      if (!pw) return;
+
+      try {
+        // Call the Python Flask backend
+        const res = await fetch("/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: pw })
+        });
+        render(await res.json());
+      } catch (e) {
+        // Fallback: run analysis in JS if Flask isn't running
+        render(analyzeInBrowser(pw));
+      }
+    }
+
+    // ── Render the result ──
+    function render(data) {
+      const { score, strength, checks, suggestions } = data;
+
+      // Show meter
+      meterArea.style.display = "block";
+      const colors = STRENGTH_COLORS[strength] || STRENGTH_COLORS["Medium"];
+      setTimeout(() => {
+        meterBar.style.width = (score * 10) + "%";
+        meterBar.style.background = colors.bar;
+      }, 30);
+      strengthLabel.textContent = strength;
+      strengthLabel.style.color = colors.label;
+      scoreText.textContent = `Score: ${score} / 10`;
+
+      // Build checks list
+      checksList.innerHTML = "";
+      for (const [name, check] of Object.entries(checks)) {
+        const row = document.createElement("div");
+        row.className = `check-row ${check.passed ? "pass" : "fail"}`;
+        row.innerHTML = `
+      <div class="check-dot"></div>
+      <div class="check-info">
+        <div class="check-name">${name}</div>
+        <div class="check-msg">${check.feedback}</div>
+      </div>
+      <div class="check-pts">${check.score}/${check.max}</div>
+    `;
+        checksList.appendChild(row);
+      }
+
+      // Show suggestions
+      if (suggestions.length) {
+        suggCard.style.display = "block";
+        suggList.innerHTML = suggestions.map(s =>
+          `<li><span class="sugg-arrow">→</span>${s}</li>`
+        ).join("");
+      }
+
+      results.classList.add("show");
+    }
+
+    // ── JS fallback (mirrors Python logic) ──
+    function analyzeInBrowser(pw) {
+      const checks = {};
+
+      const len = pw.length;
+      checks["Length"] = len < 6
+        ? { score: 0, max: 3, passed: false, feedback: `Too short (${len} chars) — use at least 8` }
+        : len < 8
+          ? { score: 1, max: 3, passed: false, feedback: `Short (${len} chars) — aim for 12+` }
+          : len < 12
+            ? { score: 2, max: 3, passed: true, feedback: `OK length (${len} chars) — 12+ is better` }
+            : { score: 3, max: 3, passed: true, feedback: `Great length (${len} chars) ✓` };
+
+      const hasUpper = /[A-Z]/.test(pw);
+      checks["Uppercase"] = {
+        score: hasUpper ? 1 : 0, max: 1, passed: hasUpper,
+        feedback: hasUpper ? "Has uppercase letters ✓" : "No uppercase letters — add A-Z"
+      };
+
+      const hasLower = /[a-z]/.test(pw);
+      checks["Lowercase"] = {
+        score: hasLower ? 1 : 0, max: 1, passed: hasLower,
+        feedback: hasLower ? "Has lowercase letters ✓" : "No lowercase letters — add a-z"
+      };
+
+      const hasNum = /[0-9]/.test(pw);
+      checks["Numbers"] = {
+        score: hasNum ? 1 : 0, max: 1, passed: hasNum,
+        feedback: hasNum ? "Has numbers ✓" : "No numbers — add digits 0-9"
+      };
+
+      const hasSpec = /[!@#$%^&*()\-_=\[\]{}|;:,.<>?]/.test(pw);
+      checks["Special Chars"] = {
+        score: hasSpec ? 2 : 0, max: 2, passed: hasSpec,
+        feedback: hasSpec ? "Has special characters ✓" : "No special chars — add !@#$%"
+      };
+
+      const bad = ["password", "123456", "qwerty", "abc123", "admin", "letmein", "hello"];
+      const hasRep = /(.)\1{2,}/.test(pw);
+      const found = bad.find(w => pw.toLowerCase().includes(w));
+      const patOk = !hasRep && !found;
+      checks["No Weak Patterns"] = {
+        score: patOk ? 1 : 0, max: 1, passed: patOk,
+        feedback: patOk ? "No common weak patterns ✓"
+          : found ? `Contains weak word: '${found}'` : "Has repeated characters"
+      };
+
+      const total = Object.values(checks).reduce((s, c) => s + c.score, 0);
+      const maxT = Object.values(checks).reduce((s, c) => s + c.max, 0);
+      const score = Math.min(10, Math.round((total / maxT) * 10));
+      const strength = score <= 3 ? "Weak" : score <= 6 ? "Medium" : score <= 8 ? "Strong" : "Very Strong";
+
+      const suggestions = [];
+      if (!checks["Length"]["passed"]) suggestions.push("Make your password longer (at least 12 characters)");
+      if (!checks["Uppercase"]["passed"]) suggestions.push("Add uppercase letters (A-Z)");
+      if (!checks["Lowercase"]["passed"]) suggestions.push("Add lowercase letters (a-z)");
+      if (!checks["Numbers"]["passed"]) suggestions.push("Add numbers (0-9)");
+      if (!checks["Special Chars"]["passed"]) suggestions.push("Add special characters like !@#$%");
+      if (!checks["No Weak Patterns"]["passed"]) suggestions.push("Avoid common words and repeated characters");
+      if (!suggestions.length) suggestions.push("Great password! Keep it safe and don't reuse it.");
+
+      return { score, strength, checks, suggestions };
+    }
+  </script>
+</body>
+
+</html>
